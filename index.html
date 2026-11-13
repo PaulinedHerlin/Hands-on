@@ -3,27 +3,145 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pauline</title>
+  <title>Simulateur de crédit – Pauline</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       font-family: system-ui, -apple-system, sans-serif;
-      background: #fafafa;
+      background: #f5f6f8;
       color: #222;
-      text-align: center;
+      line-height: 1.5;
     }
-    h1 { font-size: 3rem; margin: 0 0 .5rem; }
-    p { color: #666; margin: 0; }
+    main { max-width: 760px; margin: 0 auto; padding: 2rem 1rem 3rem; }
+    h1 { font-size: 2rem; margin: 0 0 .25rem; }
+    .sub { color: #666; margin: 0 0 2rem; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      margin-bottom: 1.5rem;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    label { display: block; font-size: .9rem; color: #555; margin-bottom: .3rem; }
+    input {
+      width: 100%;
+      padding: .6rem .7rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    input:focus { outline: 2px solid #2563eb; border-color: transparent; }
+    .result { text-align: center; }
+    .result .big { font-size: 2.4rem; font-weight: 700; color: #2563eb; margin: .2rem 0; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .stat { background: #f5f6f8; border-radius: 8px; padding: .8rem; }
+    .stat span { display: block; font-size: .85rem; color: #666; }
+    .stat strong { font-size: 1.15rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { padding: .5rem; text-align: right; border-bottom: 1px solid #eee; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: #555; font-weight: 600; }
+    h2 { font-size: 1.15rem; margin: 0 0 1rem; }
+    .note { font-size: .8rem; color: #888; text-align: center; }
+    .error { color: #b91c1c; text-align: center; }
   </style>
 </head>
 <body>
   <main>
-    <h1>Pauline</h1>
-    <p>Bienvenue sur mon site.</p>
+    <h1>Simulateur de crédit</h1>
+    <p class="sub">Estimez vos mensualités et le coût total de votre emprunt.</p>
+
+    <section class="card">
+      <div class="grid">
+        <div>
+          <label for="montant">Montant emprunté (€)</label>
+          <input id="montant" type="number" min="0" step="1000" value="200000">
+        </div>
+        <div>
+          <label for="duree">Durée (années)</label>
+          <input id="duree" type="number" min="1" max="40" step="1" value="20">
+        </div>
+        <div>
+          <label for="taux">Taux annuel (%)</label>
+          <input id="taux" type="number" min="0" step="0.05" value="3.5">
+        </div>
+        <div>
+          <label for="assurance">Taux d'assurance annuel (%)</label>
+          <input id="assurance" type="number" min="0" step="0.01" value="0.30">
+        </div>
+      </div>
+    </section>
+
+    <section class="card result" id="resultat"></section>
+
+    <section class="card">
+      <h2>Tableau d'amortissement (par année)</h2>
+      <table>
+        <thead>
+          <tr><th>Année</th><th>Capital remboursé</th><th>Intérêts</th><th>Assurance</th><th>Capital restant</th></tr>
+        </thead>
+        <tbody id="tableau"></tbody>
+      </table>
+    </section>
+
+    <p class="note">Simulation indicative, hors frais de dossier et de garantie. Elle ne constitue pas une offre de prêt.</p>
   </main>
+
+  <script>
+    const euro = n => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
+    const ids = ['montant', 'duree', 'taux', 'assurance'];
+
+    function calculer() {
+      const montant = parseFloat(document.getElementById('montant').value);
+      const annees = parseInt(document.getElementById('duree').value, 10);
+      const tauxAnnuel = parseFloat(document.getElementById('taux').value);
+      const tauxAssu = parseFloat(document.getElementById('assurance').value) || 0;
+      const res = document.getElementById('resultat');
+      const tab = document.getElementById('tableau');
+
+      if (!(montant > 0) || !(annees > 0) || !(tauxAnnuel >= 0)) {
+        res.innerHTML = '<p class="error">Renseignez un montant, une durée et un taux valides.</p>';
+        tab.innerHTML = '';
+        return;
+      }
+
+      const n = annees * 12;
+      const t = tauxAnnuel / 100 / 12;
+      const mensualite = t === 0 ? montant / n : montant * t / (1 - Math.pow(1 + t, -n));
+      const assuMois = montant * (tauxAssu / 100) / 12;
+
+      let restant = montant, totalInterets = 0, lignes = '';
+      for (let a = 1; a <= annees; a++) {
+        let cap = 0, int = 0;
+        for (let m = 0; m < 12; m++) {
+          const i = restant * t;
+          const c = mensualite - i;
+          int += i; cap += c; restant -= c;
+        }
+        if (restant < 0.005) restant = 0;
+        totalInterets += int;
+        lignes += `<tr><td>${a}</td><td>${euro(cap)}</td><td>${euro(int)}</td><td>${euro(assuMois * 12)}</td><td>${euro(restant)}</td></tr>`;
+      }
+      const totalAssu = assuMois * n;
+      const coutTotal = totalInterets + totalAssu;
+
+      res.innerHTML = `
+        <div>Mensualité (assurance comprise)</div>
+        <div class="big">${euro(mensualite + assuMois)}</div>
+        <div class="stats">
+          <div class="stat"><span>Hors assurance</span><strong>${euro(mensualite)}</strong></div>
+          <div class="stat"><span>Total des intérêts</span><strong>${euro(totalInterets)}</strong></div>
+          <div class="stat"><span>Total assurance</span><strong>${euro(totalAssu)}</strong></div>
+          <div class="stat"><span>Coût total du crédit</span><strong>${euro(coutTotal)}</strong></div>
+          <div class="stat"><span>Montant total remboursé</span><strong>${euro(montant + coutTotal)}</strong></div>
+        </div>`;
+      tab.innerHTML = lignes;
+    }
+
+    ids.forEach(id => document.getElementById(id).addEventListener('input', calculer));
+    calculer();
+  </script>
 </body>
 </html>
