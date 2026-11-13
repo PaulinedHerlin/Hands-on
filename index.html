@@ -3,144 +3,334 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simulateur de crédit – Pauline</title>
+  <title>Pauline · Simulateur de crédit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
+    :root {
+      --bg: #0b0b14;
+      --card: rgba(255,255,255,.05);
+      --card-border: rgba(255,255,255,.09);
+      --text: #f4f4f8;
+      --muted: #9a9ab0;
+      --violet: #7c5cff;
+      --pink: #ff5ca8;
+      --mint: #3ee8b5;
+      --grad: linear-gradient(135deg, #7c5cff 0%, #ff5ca8 100%);
+      --radius: 24px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #f5f6f8;
-      color: #222;
-      line-height: 1.5;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    main { max-width: 760px; margin: 0 auto; padding: 2rem 1rem 3rem; }
-    h1 { font-size: 2rem; margin: 0 0 .25rem; }
-    .sub { color: #666; margin: 0 0 2rem; }
+    /* Halos de couleur en arrière-plan */
+    body::before, body::after {
+      content: ""; position: fixed; z-index: -1; border-radius: 50%;
+      filter: blur(120px); opacity: .45;
+    }
+    body::before { width: 520px; height: 520px; background: var(--violet); top: -180px; left: -160px; }
+    body::after  { width: 460px; height: 460px; background: var(--pink); bottom: -200px; right: -140px; opacity: .3; }
+
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3rem; }
+    .logo { display: flex; align-items: center; gap: .6rem; font-weight: 800; font-size: 1.25rem; letter-spacing: -.02em; }
+    .logo-mark {
+      width: 34px; height: 34px; border-radius: 11px; background: var(--grad);
+      display: grid; place-items: center; font-size: 1rem; color: #fff;
+      box-shadow: 0 6px 20px rgba(124,92,255,.45);
+    }
+    .pill {
+      font-size: .8rem; font-weight: 600; color: var(--mint);
+      background: rgba(62,232,181,.1); border: 1px solid rgba(62,232,181,.25);
+      padding: .4rem .8rem; border-radius: 999px;
+    }
+
+    header { margin-bottom: 2.5rem; }
+    h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.05; }
+    h1 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    header p { color: var(--muted); margin-top: .9rem; font-size: 1.05rem; max-width: 520px; }
+
+    .layout { display: grid; grid-template-columns: 1.05fr 1fr; gap: 1.25rem; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
     .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,.08);
-      margin-bottom: 1.5rem;
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: var(--radius); padding: 1.75rem;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-    label { display: block; font-size: .9rem; color: #555; margin-bottom: .3rem; }
-    input {
-      width: 100%;
-      padding: .6rem .7rem;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+
+    /* Champs avec curseurs */
+    .field { margin-bottom: 1.75rem; }
+    .field:last-child { margin-bottom: 0; }
+    .field-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .8rem; }
+    .field label { font-size: .9rem; color: var(--muted); font-weight: 500; }
+    .value-box { display: flex; align-items: baseline; gap: .3rem; }
+    .value-box input {
+      width: 120px; background: transparent; border: none; color: var(--text);
+      font: inherit; font-size: 1.45rem; font-weight: 700; text-align: right; letter-spacing: -.02em;
+      border-bottom: 2px solid transparent; transition: border-color .2s;
     }
-    input:focus { outline: 2px solid #2563eb; border-color: transparent; }
-    .result { text-align: center; }
-    .result .big { font-size: 2.4rem; font-weight: 700; color: #2563eb; margin: .2rem 0; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem; }
-    .stat { background: #f5f6f8; border-radius: 8px; padding: .8rem; }
-    .stat span { display: block; font-size: .85rem; color: #666; }
-    .stat strong { font-size: 1.15rem; }
-    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-    th, td { padding: .5rem; text-align: right; border-bottom: 1px solid #eee; }
+    .value-box input:focus { outline: none; border-color: var(--violet); }
+    .value-box input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .value-box input { -moz-appearance: textfield; }
+    .unit { color: var(--muted); font-weight: 600; }
+
+    input[type=range] {
+      -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 99px;
+      background: linear-gradient(90deg, var(--violet), var(--pink)) 0/var(--p, 50%) 100% no-repeat, rgba(255,255,255,.1);
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+      background: #fff; border: 5px solid var(--violet);
+      box-shadow: 0 4px 14px rgba(124,92,255,.6); transition: transform .15s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    input[type=range]::-moz-range-thumb {
+      width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 5px solid var(--violet);
+    }
+    .range-ends { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-top: .45rem; }
+
+    /* Résultat */
+    .result-card { background: var(--grad); border: none; position: relative; overflow: hidden; }
+    .result-card::after {
+      content: ""; position: absolute; width: 260px; height: 260px; border-radius: 50%;
+      background: rgba(255,255,255,.12); top: -110px; right: -80px;
+    }
+    .result-label { font-size: .9rem; font-weight: 600; opacity: .85; }
+    .monthly { font-size: clamp(2.6rem, 6vw, 3.6rem); font-weight: 800; letter-spacing: -.04em; margin: .3rem 0 .2rem; }
+    .monthly small { font-size: 1.1rem; font-weight: 600; opacity: .8; letter-spacing: 0; }
+    .result-sub { font-size: .9rem; opacity: .85; }
+
+    .right { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .breakdown { display: flex; align-items: center; gap: 1.5rem; }
+    .donut {
+      --a: 70; --b: 25;
+      flex-shrink: 0; width: 140px; height: 140px; border-radius: 50%;
+      background: conic-gradient(
+        var(--violet) 0 calc(var(--a) * 1%),
+        var(--pink) calc(var(--a) * 1%) calc((var(--a) + var(--b)) * 1%),
+        var(--mint) calc((var(--a) + var(--b)) * 1%) 100%);
+      display: grid; place-items: center; transition: background .3s;
+    }
+    .donut-inner {
+      width: 96px; height: 96px; border-radius: 50%; background: #15151f;
+      display: grid; place-items: center; text-align: center;
+    }
+    .donut-inner span { display: block; font-size: .7rem; color: var(--muted); }
+    .donut-inner strong { font-size: 1rem; }
+    .legend { flex: 1; display: flex; flex-direction: column; gap: .85rem; }
+    .legend-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .9rem; }
+    .legend-row .k { display: flex; align-items: center; gap: .55rem; color: var(--muted); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend-row strong { font-weight: 700; }
+
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .stat { background: rgba(255,255,255,.04); border-radius: 16px; padding: 1rem; }
+    .stat span { font-size: .8rem; color: var(--muted); display: block; margin-bottom: .25rem; }
+    .stat strong { font-size: 1.15rem; letter-spacing: -.02em; }
+
+    /* Tableau */
+    .table-card { margin-top: 1.25rem; }
+    .table-head { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+    .table-head h2 { font-size: 1.1rem; font-weight: 700; }
+    .toggle {
+      background: rgba(255,255,255,.08); border: none; color: var(--text); font: inherit; font-weight: 600;
+      font-size: .85rem; padding: .5rem 1rem; border-radius: 999px; cursor: pointer; transition: background .2s;
+    }
+    .toggle:hover { background: rgba(255,255,255,.14); }
+    .table-wrap { max-height: 0; overflow: hidden; transition: max-height .45s ease; }
+    .table-card.open .table-wrap { max-height: 2400px; }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; margin-top: 1.25rem; }
+    th { text-align: right; color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; padding: .6rem .5rem; }
+    td { text-align: right; padding: .7rem .5rem; border-top: 1px solid rgba(255,255,255,.06); font-variant-numeric: tabular-nums; }
     th:first-child, td:first-child { text-align: left; }
-    th { color: #555; font-weight: 600; }
-    h2 { font-size: 1.15rem; margin: 0 0 1rem; }
-    .note { font-size: .8rem; color: #888; text-align: center; }
-    .error { color: #b91c1c; text-align: center; }
+    tr:hover td { background: rgba(255,255,255,.03); }
+    .bar { height: 6px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; min-width: 60px; }
+    .bar i { display: block; height: 100%; background: var(--grad); border-radius: 99px; }
+
+    footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 2.5rem; line-height: 1.6; }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Simulateur de crédit</h1>
-    <p class="sub">Estimez vos mensualités et le coût total de votre emprunt.</p>
+  <div class="wrap">
+    <nav>
+      <div class="logo"><div class="logo-mark">P</div>Pauline</div>
+      <div class="pill">● Simulation instantanée</div>
+    </nav>
 
-    <section class="card">
-      <div class="grid">
-        <div>
-          <label for="montant">Montant emprunté (€)</label>
-          <input id="montant" type="number" min="0" step="1000" value="200000">
+    <header>
+      <h1>Votre crédit,<br><span class="grad">en toute clarté.</span></h1>
+      <p>Bougez les curseurs, on calcule tout en temps réel. Sans engagement, sans paperasse.</p>
+    </header>
+
+    <div class="layout">
+      <section class="card">
+        <div class="field">
+          <div class="field-top">
+            <label for="montant">Montant emprunté</label>
+            <div class="value-box"><input id="montant-n" type="number" min="1000" max="1000000" step="1000"><span class="unit">€</span></div>
+          </div>
+          <input id="montant" type="range" min="5000" max="800000" step="5000" value="200000">
+          <div class="range-ends"><span>5 k€</span><span>800 k€</span></div>
         </div>
-        <div>
-          <label for="duree">Durée (années)</label>
-          <input id="duree" type="number" min="1" max="40" step="1" value="20">
+
+        <div class="field">
+          <div class="field-top">
+            <label for="duree">Durée</label>
+            <div class="value-box"><input id="duree-n" type="number" min="1" max="30" step="1"><span class="unit">ans</span></div>
+          </div>
+          <input id="duree" type="range" min="1" max="30" step="1" value="20">
+          <div class="range-ends"><span>1 an</span><span>30 ans</span></div>
         </div>
-        <div>
-          <label for="taux">Taux annuel (%)</label>
-          <input id="taux" type="number" min="0" step="0.05" value="3.5">
+
+        <div class="field">
+          <div class="field-top">
+            <label for="taux">Taux annuel</label>
+            <div class="value-box"><input id="taux-n" type="number" min="0" max="15" step="0.05"><span class="unit">%</span></div>
+          </div>
+          <input id="taux" type="range" min="0" max="10" step="0.05" value="3.5">
+          <div class="range-ends"><span>0 %</span><span>10 %</span></div>
         </div>
-        <div>
-          <label for="assurance">Taux d'assurance annuel (%)</label>
-          <input id="assurance" type="number" min="0" step="0.01" value="0.30">
+
+        <div class="field">
+          <div class="field-top">
+            <label for="assurance">Taux d'assurance</label>
+            <div class="value-box"><input id="assurance-n" type="number" min="0" max="2" step="0.01"><span class="unit">%</span></div>
+          </div>
+          <input id="assurance" type="range" min="0" max="1" step="0.01" value="0.3">
+          <div class="range-ends"><span>0 %</span><span>1 %</span></div>
         </div>
+      </section>
+
+      <div class="right">
+        <section class="card result-card">
+          <div class="result-label">Votre mensualité</div>
+          <div class="monthly"><span id="mensualite">0 €</span><small> /mois</small></div>
+          <div class="result-sub" id="sous-titre">assurance comprise</div>
+        </section>
+
+        <section class="card">
+          <div class="breakdown">
+            <div class="donut" id="donut">
+              <div class="donut-inner"><div><span>Total</span><strong id="total-court">0 €</strong></div></div>
+            </div>
+            <div class="legend">
+              <div class="legend-row"><span class="k"><i class="dot" style="background:var(--violet)"></i>Capital</span><strong id="l-capital">0 €</strong></div>
+              <div class="legend-row"><span class="k"><i class="dot" style="background:var(--pink)"></i>Intérêts</span><strong id="l-interets">0 €</strong></div>
+              <div class="legend-row"><span class="k"><i class="dot" style="background:var(--mint)"></i>Assurance</span><strong id="l-assurance">0 €</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="stats">
+          <div class="stat"><span>Coût total du crédit</span><strong id="cout">0 €</strong></div>
+          <div class="stat"><span>Hors assurance</span><strong id="hors-assu">0 €</strong></div>
+        </section>
+      </div>
+    </div>
+
+    <section class="card table-card" id="table-card">
+      <div class="table-head" id="table-head">
+        <h2>Tableau d'amortissement</h2>
+        <button class="toggle" id="toggle" type="button">Afficher</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Année</th><th>Capital</th><th>Intérêts</th><th>Assurance</th><th>Restant dû</th><th></th></tr></thead>
+          <tbody id="tableau"></tbody>
+        </table>
       </div>
     </section>
 
-    <section class="card result" id="resultat"></section>
-
-    <section class="card">
-      <h2>Tableau d'amortissement (par année)</h2>
-      <table>
-        <thead>
-          <tr><th>Année</th><th>Capital remboursé</th><th>Intérêts</th><th>Assurance</th><th>Capital restant</th></tr>
-        </thead>
-        <tbody id="tableau"></tbody>
-      </table>
-    </section>
-
-    <p class="note">Simulation indicative, hors frais de dossier et de garantie. Elle ne constitue pas une offre de prêt.</p>
-  </main>
+    <footer>
+      Simulation indicative, hors frais de dossier et de garantie. Elle ne constitue pas une offre de prêt.<br>
+      © Pauline
+    </footer>
+  </div>
 
   <script>
-    const euro = n => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
-    const ids = ['montant', 'duree', 'taux', 'assurance'];
+    const fmt = (n, d = 0) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: d, minimumFractionDigits: d });
+    const court = n => n >= 1e6 ? (n / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' M€'
+                     : Math.round(n / 1000).toLocaleString('fr-FR') + ' k€';
+    const $ = id => document.getElementById(id);
+    const champs = ['montant', 'duree', 'taux', 'assurance'];
 
-    function calculer() {
-      const montant = parseFloat(document.getElementById('montant').value);
-      const annees = parseInt(document.getElementById('duree').value, 10);
-      const tauxAnnuel = parseFloat(document.getElementById('taux').value);
-      const tauxAssu = parseFloat(document.getElementById('assurance').value) || 0;
-      const res = document.getElementById('resultat');
-      const tab = document.getElementById('tableau');
-
-      if (!(montant > 0) || !(annees > 0) || !(tauxAnnuel >= 0)) {
-        res.innerHTML = '<p class="error">Renseignez un montant, une durée et un taux valides.</p>';
-        tab.innerHTML = '';
-        return;
-      }
-
-      const n = annees * 12;
-      const t = tauxAnnuel / 100 / 12;
-      const mensualite = t === 0 ? montant / n : montant * t / (1 - Math.pow(1 + t, -n));
-      const assuMois = montant * (tauxAssu / 100) / 12;
-
-      let restant = montant, totalInterets = 0, lignes = '';
-      for (let a = 1; a <= annees; a++) {
-        let cap = 0, int = 0;
-        for (let m = 0; m < 12; m++) {
-          const i = restant * t;
-          const c = mensualite - i;
-          int += i; cap += c; restant -= c;
-        }
-        if (restant < 0.005) restant = 0;
-        totalInterets += int;
-        lignes += `<tr><td>${a}</td><td>${euro(cap)}</td><td>${euro(int)}</td><td>${euro(assuMois * 12)}</td><td>${euro(restant)}</td></tr>`;
-      }
-      const totalAssu = assuMois * n;
-      const coutTotal = totalInterets + totalAssu;
-
-      res.innerHTML = `
-        <div>Mensualité (assurance comprise)</div>
-        <div class="big">${euro(mensualite + assuMois)}</div>
-        <div class="stats">
-          <div class="stat"><span>Hors assurance</span><strong>${euro(mensualite)}</strong></div>
-          <div class="stat"><span>Total des intérêts</span><strong>${euro(totalInterets)}</strong></div>
-          <div class="stat"><span>Total assurance</span><strong>${euro(totalAssu)}</strong></div>
-          <div class="stat"><span>Coût total du crédit</span><strong>${euro(coutTotal)}</strong></div>
-          <div class="stat"><span>Montant total remboursé</span><strong>${euro(montant + coutTotal)}</strong></div>
-        </div>`;
-      tab.innerHTML = lignes;
+    function majCurseur(r) {
+      const p = (r.value - r.min) / (r.max - r.min) * 100;
+      r.style.setProperty('--p', p + '%');
     }
 
-    ids.forEach(id => document.getElementById(id).addEventListener('input', calculer));
+    // Animation douce de la mensualité
+    let affiche = 0, anim;
+    function animer(cible) {
+      cancelAnimationFrame(anim);
+      const depart = affiche, t0 = performance.now();
+      const pas = t => {
+        const k = Math.min((t - t0) / 350, 1), e = 1 - Math.pow(1 - k, 3);
+        affiche = depart + (cible - depart) * e;
+        $('mensualite').textContent = fmt(affiche, 2);
+        if (k < 1) anim = requestAnimationFrame(pas);
+      };
+      anim = requestAnimationFrame(pas);
+    }
+
+    function calculer() {
+      const montant = +$('montant-n').value, annees = Math.round(+$('duree-n').value);
+      const taux = +$('taux-n').value, tauxAssu = +$('assurance-n').value || 0;
+      if (!(montant > 0) || !(annees > 0) || !(taux >= 0)) return;
+
+      const n = annees * 12, t = taux / 100 / 12;
+      const mens = t === 0 ? montant / n : montant * t / (1 - Math.pow(1 + t, -n));
+      const assuMois = montant * tauxAssu / 100 / 12;
+
+      let restant = montant, totInt = 0, lignes = '';
+      for (let a = 1; a <= annees; a++) {
+        let cap = 0, int = 0;
+        for (let m = 0; m < 12; m++) { const i = restant * t; int += i; cap += mens - i; restant -= mens - i; }
+        if (restant < .01) restant = 0;
+        totInt += int;
+        const pct = (1 - restant / montant) * 100;
+        lignes += `<tr><td>${a}</td><td>${fmt(cap)}</td><td>${fmt(int)}</td><td>${fmt(assuMois * 12)}</td><td>${fmt(restant)}</td><td><div class="bar"><i style="width:${pct}%"></i></div></td></tr>`;
+      }
+      const totAssu = assuMois * n, total = montant + totInt + totAssu;
+
+      animer(mens + assuMois);
+      $('sous-titre').textContent = `assurance comprise · sur ${n} mois`;
+      $('hors-assu').textContent = fmt(mens, 2) + ' /mois';
+      $('cout').textContent = fmt(totInt + totAssu);
+      $('l-capital').textContent = fmt(montant);
+      $('l-interets').textContent = fmt(totInt);
+      $('l-assurance').textContent = fmt(totAssu);
+      $('total-court').textContent = court(total);
+      const d = $('donut');
+      d.style.setProperty('--a', montant / total * 100);
+      d.style.setProperty('--b', totInt / total * 100);
+      $('tableau').innerHTML = lignes;
+    }
+
+    champs.forEach(id => {
+      const r = $(id), n = $(id + '-n');
+      n.value = r.value; majCurseur(r);
+      r.addEventListener('input', () => { n.value = r.value; majCurseur(r); calculer(); });
+      n.addEventListener('input', () => {
+        if (n.value === '') return;
+        r.value = n.value; majCurseur(r); calculer();
+      });
+    });
+
+    $('table-head').addEventListener('click', () => {
+      const c = $('table-card'); c.classList.toggle('open');
+      $('toggle').textContent = c.classList.contains('open') ? 'Masquer' : 'Afficher';
+    });
+
     calculer();
   </script>
 </body>
